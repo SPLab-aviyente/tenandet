@@ -1,0 +1,16 @@
+function U = update_Umat(Y, Fs, modes, rank)
+% U = update_Umat(Y, Fs, modes, rank)
+% Updates U matrix by pseudoinverse
+% 
+tau = 0.3;
+m = length(modes);
+sz = size(Y);
+[U, S, V] = svds(t2m(Y, modes), rank);
+s = 1./diag(S);
+U = t2m(Fs, modes)*(V*diag(s)*U');
+U = reshape(U, sz(modes), []);
+Ui = U2Ui_tau(U, tau);
+[Ui{m}, S, V] = svds(Ui{m}, rank);
+Ui{m+1} = S*V';
+Ui(m+2:2*m+1) = U2Ui_tau(reshape(Ui{m}), tau);
+end
