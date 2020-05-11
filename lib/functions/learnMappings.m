@@ -43,7 +43,7 @@ while iter<=max_iter && dIter >= min_dist
     %% D Update
     % $||D||_1 + \frac{\beta}{2}||D||_F^2 + \frac{\gamma_1}{2}||D-X+\sigma(F)-S1||_F^2$
 %     dTime   = cputime;
-    D       = softThresh((X - lreLU(F, zeta) + S1).*gamma_1./(beta+gamma_1), 1/(beta+gamma_1));
+    D       = soft_threshold((X - lreLU(F, zeta) + S1).*gamma_1./(beta+gamma_1), 1/(beta+gamma_1));
     after_D = [after_D, obj_func(D,X,F,Yp,B,S1,S2,beta,gamma_1,gamma_2,zeta)];
 %     dTime   = cputime - dTime
     
