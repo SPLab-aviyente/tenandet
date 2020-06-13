@@ -1,36 +1,27 @@
-traffic_data = load('24-Oct-2018_data.mat');
 
-X = create_labels(traffic_data);
-X = reshape(X, 288, 365, 10);
-X = reshape(X(:,1:364,:), 288, 7, 52, 10);
-Y = reshape(traffic_data.station_counts, 288, 365, 10);
-Y = reshape(Y(:,1:364,:), 288, 7, 52, 10);
-Y = denan(Y);
+[X, Y, Yn, days, weeks, sensors] = get_traffic_data;
 
-% save('traffic_data', 'Y', 'X')
-% subplot(1,2,1)
-% hold on
-% for i=1:7
-% plot(X(:,i,1,1))
-% end
-% subplot(1,2,2)
-% hold on
-% for i=1:7
-% plot(Y(:,i,1,1))
-% end
 gamma_range = 10.^(-2:0.2:0);
 param.lambda = 1/sqrt(max(size(Y)));
-
-param.beta_1 = 1/(10*std(Y(:)));
+param.theta = param.lambda/100;
+param.alpha = param.lambda;
+param.beta_1 = 1/(5*std(Yn(:)));
 param.beta_2 = param.beta_1;
 param.beta_3 = param.beta_1;
+param.beta_4 = param.beta_1;
 param.max_iter = 100;
-param.err_tol = 0.0001;
+param.err_tol = 0.01;
 
 for i=1:length(gamma_range)
-    param.gamma = param.lambda;
-    [L,S] = low_temp_sp_dec(Y, param);
-%     plot_sensor(X, Y, S, L, 5)
+    param.gamma = 1/sqrt(max(size(Y)));
+    t = cputime;
+    [L,S,N,obj_val] = low_temp_sp_dec(Yn, param);
+    t = cputime-t
+    plot_sensor_new(X, Y, S, L, 5)
+    t = cputime;
+    [L,S, N,obj_val_gloss] = gloss(Yn, param);
+    t = cputime-t
+    plot_sensor_new(X, Y, S, L, 5)
     recall(i) = sum(X>0.5&(S~=0), 'all')/sum((X>0.5),'all');
     fpr(i) = sum(X<0.5&(S~=0), 'all')/sum((X<0.5),'all');
 end
@@ -58,18 +49,3 @@ grid
 % figure,
 % plot(fpr, recall,'LineWidth', 3)
 % grid
-
-function [X] = create_labels(data)
-% [X] = createLabels(data)
-%   Creates labels using the information provided in the data.
-num_elements = size(data.station_counts,1);
-num_sensors  = size(data.station_counts,2);
-X = zeros(num_elements, num_sensors);
-for i=1:length(data.station_ids)
-    ind_start = round(minutes(data.inc_timestamp(i,:)-...
-        datetime(data.station_times(1,:)))/5);
-    ind_end = round(data.inc_duration(i)/5)+ind_start;
-    [~,ind_station,~] = intersect(data.station_ids,data.inc_station_id(i));
-    X(ind_start:ind_end, ind_station) = 1;
-end
-end

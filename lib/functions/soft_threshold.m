@@ -1,7 +1,6 @@
 function X = soft_threshold(X, sigma)
 %softThresh Soft thresholding function
 %   X = soft_threshold(X, sigma)
-X(abs(X)<sigma) = 0;
 temp = abs(X)-sigma;
 temp(temp<0) = 0;
 X = temp.*sign(X);

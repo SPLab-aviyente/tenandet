@@ -2,19 +2,23 @@
 sizes   = [50,30,15,10];
 numAnom = 100;
 lenAnom = 25;
-amoAnom = 5;
+amoAnom = 3;
 modes   = [1,3];
 [X,Y]   = gendata(sizes, numAnom, lenAnom, amoAnom);
+Yn = Y;
+Yn(20:40,:,5,5) = 0;
 % traffic_script
 % Y = permute(Y, [1,3,2,4]);
 % X = permute(X, [1,3,2,4]);
 
 thresh = 0.7;
-myDec = myTensorDecTree(Y,thresh,'LSA',[1,1,1,1]); % enter parameters
+myDec = myTensorDecTree(Yn,thresh,'LSA',[1,1,1,1]); % enter parameters
 myDec.prepareRoot; % prepare root node
 myDec.addLayers(1); % add scales
 myDec.cReconstruction(2);% 1 2 3 4
-S = Y-myDec.recData;
+L = myDec.recData;
+S = Yn-L;
+plot_sensor_new(Yn, Y, S, L, 5)
 % 
 num_stds = 2;
 mean_S = mean(S,3);

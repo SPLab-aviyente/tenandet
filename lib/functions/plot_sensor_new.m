@@ -1,8 +1,11 @@
-function plot_sensor_new(X, Y, S, S_lbl, checkSens)
+function plot_sensor_new(X, Y, S, S_lbl, checkSens, num_figs)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
 
-for i=1:size(Y,3)
+if nargin==5
+    num_figs=min(15,size(S,3));
+end
+for i=1:num_figs
     figure,
     subplot(4,1,1)
     plot(X(:,:,i,checkSens))
