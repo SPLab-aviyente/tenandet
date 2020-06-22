@@ -9,19 +9,20 @@ if length(varargin)==2
 end
 
 if length(varargin)==1
-    corr_mat = norm(X(:))*ones(81);
+    dist_mat = norm(X(:))*ones(81);
     data = reshape(X, [], S);
     load neighbors.mat
     for i=1:length(regions)
         curr_zone = data(:,i);
         [~,neighbor_ind ] = intersect(regions, neighbors{i});
-        corr_mat(i, neighbor_ind) = exp(-sum((curr_zone-data(:,neighbor_ind)).^2,1))./(norm(curr_zone)*sum(data(:,neighbor_ind).^2,1));
+        dist_mat(i, neighbor_ind) = sum((curr_zone-data(:,neighbor_ind)).^2,1)./(norm(curr_zone)*sum(data(:,neighbor_ind).^2,1));
     end
-    W = triu((corr_mat))+triu((corr_mat),1)';
-%     W = W-min(W(:));
-%     vec = sort(W(:));
-%     vec(vec==inf)=[];
-%     W = W>.2*vec(end);
+    W = exp(-(triu(dist_mat)+triu(dist_mat,1)'));
+    W = W-min(W(:));
+    vec = sort(W(:));
+    vec(vec==inf)=[];
+    W(W<.4*vec(end))=0;
+%     W = W>.4*vec(end);
 else
     X = reshape(X,[],S);
     D = zeros(S,S);

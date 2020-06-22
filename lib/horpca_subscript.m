@@ -1,10 +1,12 @@
 
 param.lambda = 1/sqrt(max(size(Y)));
-param.beta_1 = 1/(5*std(Y(:)));
+param.beta_1 = 1/(5*std(Yn(setdiff(1:numel(Yn), ind_removed))));
 param.max_iter = 100;
-param.err_tol = 0.01;
+% param.err_tol = 0.001;
 tic;
 [L,S_horpca, obj_val] = horpca(Yn, param);
+rmse_horpca(ind_outer) = norm(L-Y_gen)/sqrt(numel(Y));
+mape_horpca(ind_outer) = sum(abs(L-Y_gen))/numel(Y);
 time_horpca = toc
 %% Envelope Analysis
 if ind_outer == length(anom_list)

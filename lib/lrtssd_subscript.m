@@ -2,14 +2,16 @@ param.lambda = 1/sqrt(max(size(Y)));
 % param.lambda = 1/2/sqrt(max(size(Y)));
 % param.gamma = 1/15/sqrt(max(size(Y)));
 param.alpha = 0;
-param.beta_1 = 1/(5*std(Y(:)));
+param.beta_1 = 1/(5*std(Yn(setdiff(1:numel(Yn), ind_removed))));
 param.beta_2 = param.beta_1;
 param.beta_3 = param.beta_1;
 param.max_iter = 100;
-param.err_tol = 0.01;
+% param.err_tol = 0.001;
 
 t = tic;
 [L, S_lrt, N] = low_temp_sp_dec(Yn, param);
+rmse_loss(ind_outer) = norm(L-Y_gen)/sqrt(numel(Y));
+mape_loss(ind_outer) = sum(abs(L-Y_gen))/numel(Y);
 time_lrtssd = toc(t)
 %% Envelope analysis
 if ind_outer == length(anom_list)

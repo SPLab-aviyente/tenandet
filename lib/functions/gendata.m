@@ -25,10 +25,15 @@ if ~isempty(varargin)
     data = varargin{1};
     dims = size(data);
     Y = repmat(mean(data,3),[1,1,dims(3),1]);
-    if length(varargin) ==2
+    if length(varargin) == 2
         num_missing_days = varargin{2};
     else
         num_missing_days = 5000;
+    end
+    if length(varargin) == 3
+        pt_vs_fb = varargin{3};
+    else
+        pt_vs_fb = false;
     end
 else
     var=0.01;
@@ -41,40 +46,46 @@ else
             end
         end
     end
+    pt_vs_fb = false;
 end
 
 mat_anomaly = zeros(number_anomaly,5);
+[r,c,z] = ind2sub(dims(2:4),randperm(prod(dims(2:4)),number_anomaly));
+mat_anomaly(:,3:5) = [r',c',z'];
 for i=1:number_anomaly
-    mat_anomaly(i,:)=[randi(dims(1)-length_anomaly)+[0, length_anomaly], randi(dims(2)),randi(dims(3)),randi(dims(4))];
+    mat_anomaly(i,1:2) = randi(dims(1)-length_anomaly)+[0, length_anomaly];
 end
 X = zeros(size(Y));
 Y = Y.*(0.3*randn(size(Y))+1);
-[~,tempInd,~]=unique(mat_anomaly(:,3:5),'rows');
-mat_anomaly = mat_anomaly(tempInd,:);
-for i=1:size(mat_anomaly, 1)
-    indCell=num2cell([(mat_anomaly(i,1):mat_anomaly(i,2))',repmat(mat_anomaly(i,3:5),mat_anomaly(i,2)-mat_anomaly(i,1)+1,1)],1);
-    indVec=sub2ind(dims, indCell{:});
-    Y(indVec)=amplitude_anomaly*Y(indVec)+amplitude_anomaly*log(mean(Y(indVec)))^2;
+Yn = Y;
+ind_anoms = zeros(number_anomaly*length_anomaly,1);
+for i=1:number_anomaly
+    indCell = num2cell([(mat_anomaly(i,1):mat_anomaly(i,2))',repmat(mat_anomaly(i,3:5),mat_anomaly(i,2)-mat_anomaly(i,1)+1,1)],1);
+    indVec = sub2ind(dims, indCell{:});
+    if pt_vs_fb
+        ind_anoms((i-1)*length_anomaly+1:i*length_anomaly) = indVec;
+    end
+    add_sub = sign(randn);
+    Yn(indVec)=(amplitude_anomaly^add_sub)*Yn(indVec)+add_sub*amplitude_anomaly*log(mean(Yn(indVec)))^2;
     X(indVec)=1;
 end
 
-
-Yn = Y;
-% Y = Y-min(Yn(:));
-% Yn = Yn-min(Yn(:));
-days = randi(dims(3)*dims(2), num_missing_days, 1)-0.1;
-weeks = floor(days/7)+1;
-days = floor(mod(days, 7))+1;
-removed_inds = [];
-for i=1:num_missing_days
-    rand_sens = randi(dims(4));
-    if ~isempty(intersect([days(i),weeks(i),rand_sens], mat_anomaly(:,3:5),'rows'))
-        temp = setdiff(1:dims(4),rand_sens);
-        rand_sens = temp(randi(dims(4)-1));
+if pt_vs_fb
+    removed_inds = setdiff(1:numel(Yn), ind_anoms);
+    removed_inds = removed_inds(randperm(length(removed_inds),num_missing_days*size(Yn,1)));
+    Yn(removed_inds)=0;
+else
+    [days,weeks,sens] = ind2sub(dims(2:4),randperm(prod(dims(2:4)),num_missing_days));
+    removed_inds = [];
+    for i=1:num_missing_days
+        if ~isempty(intersect([days(i),weeks(i),sens(i)], mat_anomaly(:,3:5),'rows'))
+            temp = setdiff(1:dims(4),sens(i));
+            sens(i) = temp(randi(dims(4)-1));
+        end
+        indCell = num2cell([(1:dims(1))',repmat([days(i),weeks(i),sens(i)],dims(1),1)],1);
+        indVec = sub2ind(dims,indCell{:});
+        Yn(indVec) = 0;
+        removed_inds = [removed_inds; indVec];
     end
-    indCell = num2cell([(1:dims(1))',repmat([days(i),weeks(i),rand_sens],dims(1),1)],1);
-    indVec = sub2ind(dims,indCell{:});
-    Yn(indVec) = 0;
-    removed_inds = [removed_inds; indVec];
 end
 end

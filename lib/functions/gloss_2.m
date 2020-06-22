@@ -1,4 +1,4 @@
-function [L, S, Nt, obj_val] = gloss(Y, param)
+function [L, S, Nt, obj_val] = gloss_2(Y, param)
 % [L, S, Nt, obj_val] = gloss(Y, param)
 % Graph Regularized Low rank plus Smooth-Sparse Decomposition
 
@@ -24,8 +24,7 @@ S = zeros(size(Y));
 Nt = zeros(size(Y));
 W = zeros(size(Y));
 Z = zeros(size(Y));
-Phi = get_graphL(Y, 5, true);
-inv_Phi = ((theta/beta_4)*Phi+eye(size(Phi)))^-1;
+[Phi, inv_Phi] = get_graphL2(Y, theta/beta_4);
 D = convmtx([1,-1], size(Y,1));
 D(:,end) = [];
 D(end,1) = -1;
@@ -49,14 +48,14 @@ timeZ = [];
 timeW = [];
 timeDual = [];
 iter = 1;
-obj_val = compute_obj(Y,L,La,S,Nt,W,Z,Lam,D,Phi,param);
+% obj_val = compute_obj(Y,L,La,S,Nt,W,Z,Lam,D,Phi,param);
 while true
     %% L Update
     tstart = tic;
     [L, ~] = soft_hosvd_wgr(Y-S-Nt, Lam{1}, La, Lam{4}, psi, beta_1, beta_4);
     timeL(end+1)=toc(tstart);
     %% La Update
-    La = graph_reg_update(L,Lam{4},inv_Phi);
+    La = graph_reg_update_2(L,Lam{4},inv_Phi);
     %% S Update
     tstart = tic;
     temp1 = zeros(size(Y));
@@ -99,7 +98,7 @@ while true
     timeDual(end+1)=toc(tstart);
     
     %% Error and objective calculations
-    obj_val(iter+1) = compute_obj(Y,L,La,S,Nt,W,Z,Lam,D,Phi,param);
+%     obj_val(iter+1) = compute_obj(Y,L,La,S,Nt,W,Z,Lam,D,Phi,param);
 %     err = abs(obj_val(iter)-obj_val(iter+1))/obj_val(iter);
     err = max(norm(S(:)-Sold(:))/norm(Sold(:)), temp);
     iter = iter+1;

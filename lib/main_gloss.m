@@ -6,33 +6,46 @@ load regions.mat
 arrs = squeeze(sum(reshape(arrs,6,24,365,[]),1));
 Y = double(reshape(arrs(:,1:364,regions), 24, 7, 52,[]));
 % [~, Y, ~] = get_traffic_data;
-anom_list = 50;
-n_missing = [100,200,500,1000,5000,10000];
+param.err_tol = 0.01;
+anom_list = 100;
+n_missing = [100,500,1000,2000,3000,5000,7500,10000,15000,20000];
 for ind_outer=1:length(n_missing)
     num_anom = anom_list(1);
     len_anom = 7;
     amp_anom = 1.5;
-    [X, ~, Yn, ind_removed, mat_anom] = gendata(sizes, num_anom, len_anom, amp_anom, Y, n_missing(ind_outer));
+    [X, Y_gen, Yn, ind_removed, mat_anom] = gendata(sizes, num_anom, len_anom, amp_anom, Y, n_missing(ind_outer));
+    L_ee = repmat(mean(Yn,3),1,1,size(Yn,3),1);
+    rmse_ee(ind_outer) = norm(L_ee-Y_gen)/sqrt(numel(Y));
+    mape_ee(ind_outer) = sum(abs(L_ee-Y_gen))/numel(Y);
     if ind_outer == length(anom_list)
 %         [fpr, recall_e] = analyze_envelope(Yn, X, ind_removed);
     end
-    [k_list(:,ind_outer), precision_or(:,ind_outer), recall_or(:,ind_outer), fpr_or(:,ind_outer)] = analyze_top_K(mahal_dist(Yn), X, ind_removed);
+    [k_list(:,ind_outer), precision_or(:,ind_outer), recall_or(:,ind_outer), fpr_or(:,ind_outer)] = analyze_top_K(mahal_dist(Yn-L_ee), X, ind_removed);
     
-    param.psi = [.01,5,20,.001];
+    param.psi = [.1,1,20,.01];
     param.gamma = 1/sqrt(max(size(Y)));
     gloss_subscript
     lrtssd_subscript
+    Yn_d = S_lrt;
+    dbscan_subscript
+    precision_lrs_db(:,ind_outer) = precision_dbscan(:,ind_outer);
+    recall_lrs_db(:,ind_outer) = recall_dbscan(:,ind_outer);
+    fpr_lrs_db(:,ind_outer) = fpr_dbscan(:,ind_outer);
 %     precision_wlrs = precision_lrs;
 %     recall_wlrs = recall_lrs;
 %     fpr_wlrs = fpr_lrs;
     horpca_subscript
-    lof_subscript
+    rmse_whorpca(ind_outer) = rmse_horpca(ind_outer);
+    mape_whorpca(ind_outer) = mape_horpca(ind_outer);
     precision_whorpca(:,ind_outer) = precision_horpca(:,ind_outer);
     recall_whorpca(:,ind_outer) = recall_horpca(:,ind_outer);
     fpr_whorpca(:,ind_outer) = fpr_horpca(:,ind_outer);
     param.psi = [1,1,1,1];
+    lof_subscript
 %     param.gamma = 1/5/(max(size(Y)));
     horpca_subscript
+    Yn_d = Yn;
+    dbscan_subscript
 end
 
 % figure,
@@ -46,7 +59,7 @@ end
 % legend, grid
 % title('ROC of the envelope')
 
-k_list = n_missing;
+k_list = 24*100*n_missing/numel(Y);
 figure,
 plot(k_list, precision_or,'DisplayName','EE','LineWidth',3);
 hold on;
@@ -54,7 +67,9 @@ plot(k_list, precision_lof,'DisplayName','LOF','LineWidth',3);
 plot(k_list, precision_horpca,'DisplayName','HORPCA','LineWidth',3);
 plot(k_list, precision_whorpca,'DisplayName','WHORPCA','LineWidth',3);
 plot(k_list, precision_lrs,'DisplayName','LOSS','LineWidth',3);
+plot(k_list, precision_lrs_db,'DisplayName','LOSS-DB','LineWidth',3);
 plot(k_list, precision_gloss,'DisplayName','GLOSS','LineWidth',3)
+plot(k_list, precision_dbscan,'DisplayName','DBSCAN','LineWidth',3)
 % plot(k_list, precision_wlrs,'DisplayName','WLOSS','LineWidth',3);
 legend, grid
 title('Precision')
@@ -69,7 +84,9 @@ plot(k_list, recall_lof,'DisplayName','LOF','LineWidth',3);
 plot(k_list, recall_horpca,'DisplayName','HORPCA','LineWidth',3);
 plot(k_list, recall_whorpca,'DisplayName','WHORPCA','LineWidth',3);
 plot(k_list, recall_lrs,'DisplayName','LOSS','LineWidth',3);
+plot(k_list, recall_lrs_db,'DisplayName','LOSS-DB','LineWidth',3);
 plot(k_list, recall_gloss,'DisplayName','GLOSS','LineWidth',3)
+plot(k_list, recall_dbscan,'DisplayName','DBSCAN','LineWidth',3)
 % plot(k_list, recall_wlrs,'DisplayName','WLOSS','LineWidth',3);
 legend, grid
 title('Recall')
@@ -84,7 +101,9 @@ plot(fpr_lof, recall_lof,'DisplayName','LOF','LineWidth',3);
 plot(fpr_horpca, recall_horpca,'DisplayName','HORPCA','LineWidth',3);
 plot(fpr_whorpca, recall_whorpca,'DisplayName','WHORPCA','LineWidth',3);
 plot(fpr_lrs, recall_lrs,'DisplayName','LOSS','LineWidth',3);
+plot(fpr_lrs_db, recall_lrs_db,'DisplayName','LOSS-DB','LineWidth',3);
 plot(fpr_gloss,recall_gloss,'DisplayName','GLOSS','LineWidth',3)
+plot(fpr_dbscan, recall_dbscan,'DisplayName','DBSCAN','LineWidth',3)
 % plot(fpr_wlrs, recall_wlrs,'DisplayName','WLOSS','LineWidth',3);
 legend, grid
 title('ROC')
