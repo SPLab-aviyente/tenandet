@@ -1,12 +1,12 @@
-function [L, W] = get_graphL2(X, theta)
+function [L, L_inv] = get_graphL2(X, theta)
 %
 %
-L = zeros(size(X,1),size(X,4),size(X,3),size(X,4));
+L = zeros(size(X,4),size(X,4),size(X,2));
 L_inv = L;
 for j=1:size(X,2)
         data = reshape(X(:,j,:,:),[],size(X,4));
         dist_mat = zeros(size(data,2));
-        for i=1:length(regions)
+        for i=1:size(data,2)
             curr_zone = data(:,i);
             dist_mat(i,:) = sum((curr_zone-data).^2,1)./(norm(curr_zone)*sum(data.^2,1));
         end

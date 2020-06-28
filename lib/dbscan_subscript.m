@@ -1,7 +1,7 @@
 
 
 ind_remain = setdiff(1:numel(Yn), ind_removed);
-eps_list = 10.^[-2];
+eps_list = 1.3*10.^[2];
 for i = 1:length(eps_list)
     db_Y = apply_dbscan(Yn_d, eps_list(i), 5);
     true_pos = sum(X(db_Y(ind_remain)==1));

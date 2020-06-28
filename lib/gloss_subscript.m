@@ -1,5 +1,5 @@
 
-param.lambda = 1/sqrt(max(size(Y)));
+% param.lambda = 1/2/sqrt(max(size(Yn)));
 % param.gamma = 1/(max(size(Y)));
 param.theta = 1/(sum(std(t2m(Yn,4),[],2).^2));
 param.alpha = 0;
@@ -18,8 +18,8 @@ param.beta_4 = param.beta_1/1;
 param.max_iter = 100;
 tic;
 [L,S,~, obj_val] = gloss(Yn, param);
-rmse_gloss(ind_outer) = norm(L-Y_gen)/sqrt(numel(Y));
-mape_gloss(ind_outer) = sum(abs(L-Y_gen))/numel(Y);
+rmse_gloss(ind_outer) = norm(L(:)-Y_gen(:))/sqrt(numel(Y_gen));
+mape_gloss(ind_outer) = sum(abs(L-Y_gen),'all')/numel(Y_gen);
 time_gloss = toc
 %% Envelope Analysis
 if ind_outer == length(anom_list)
