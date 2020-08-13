@@ -25,7 +25,7 @@ for i=1:num_figs
     title('GLOSS')
     subplot(2,4,3)
     plot((S2(:,:,lst_figs(i),day_id)))
-    title('WLOSS')
+    title('LOGSS')
     subplot(2,4,4)
     plot((S3(:,:,lst_figs(i),day_id)))
     title('LOSS')

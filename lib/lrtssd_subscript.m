@@ -9,9 +9,9 @@ param.max_iter = 100;
 % param.err_tol = 0.001;
 
 t = tic;
-[L, S_lrt, N] = low_temp_sp_dec(Yn, param);
-rmse_loss(ind_outer) = norm(L(:)-Y_gen(:))/sqrt(numel(Y_gen));
-mape_loss(ind_outer) = sum(abs(L-Y_gen),'all')/numel(Y_gen);
+[L_lrt, S_lrt, ~] = low_temp_sp_dec(Yn, param);
+rmse_loss(ind_outer) = norm(L_lrt(:)-Y_gen(:))/sqrt(numel(Y_gen));
+mape_loss(ind_outer) = sum(abs(L_lrt-Y_gen),'all')/numel(Y_gen);
 time_lrtssd = toc(t)
 %% Envelope analysis
 if ind_outer == length(anom_list)

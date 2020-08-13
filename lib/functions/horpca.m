@@ -1,6 +1,6 @@
 function [L, S, obj_val] = horpca(Y, param)
-% [L, S, Nt, obj_val] = gloss(Y, param)
-% Graph Regularized Low rank plus Smooth-Sparse Decomposition
+% [L, S, Nt, obj_val] = horpca(Y, param)
+% Higher order Robust PCA
 
 N = ndims(Y);
 
@@ -39,7 +39,7 @@ while true
         temp1 = temp1+(L{i}-Lam{i});
     end
     Sold = S;
-    S = soft_threshold(beta_1*(N*Y-temp1), lambda)./(N*beta_1);
+    S = soft_threshold(beta_1*(Y-temp1/N), lambda)./(beta_1);
     timeS(end+1)=toc(tstart);
     %% Dual Updates
     tstart = tic;

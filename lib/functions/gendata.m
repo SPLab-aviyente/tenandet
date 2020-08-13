@@ -54,7 +54,7 @@ for i=1:number_anomaly
     mat_anomaly(i,1:2) = randi(dims(1)-length_anomaly)+[0, length_anomaly];
 end
 X = zeros(size(Y));
-Y = Y.*(sqrt(.1)*randn(size(Y))+1);
+Y = Y.*(sqrt(.5)*randn(size(Y))+1);
 Yn = Y;
 ind_anoms = zeros(number_anomaly*(length_anomaly+1),1);
 for i=1:number_anomaly
@@ -87,5 +87,5 @@ else
     end
 end
 
-Yn(Yn==inf) = max(Y(:));
+Yn(isinf(Yn)) = max(Y(:));
 end

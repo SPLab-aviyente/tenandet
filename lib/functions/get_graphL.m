@@ -9,19 +9,24 @@ if length(varargin)==2
 end
 
 if length(varargin)==1
-    dist_mat = norm(X(:))*ones(81);
+    dist_mat = norm(X(:))*ones(S);
     data = reshape(X, [], S);
     load neighbors.mat
-    for i=1:length(regions)
+    for i=1:S
         curr_zone = data(:,i);
-        [~,neighbor_ind ] = intersect(regions, neighbors{i});
-        dist_mat(i, neighbor_ind) = sum((curr_zone-data(:,neighbor_ind)).^2,1)./(norm(curr_zone)*sum(data(:,neighbor_ind).^2,1));
+        if varargin{1}
+            [~,neighbor_ind ] = intersect(regions, neighbors{i});
+        else
+            neighbor_ind = 1:S;
+        end
+        dist_mat(i, neighbor_ind) = sum((curr_zone-data(:,neighbor_ind)).^2,1)./(norm(curr_zone)*sqrt(sum(data(:,neighbor_ind).^2,1)));
     end
     W = exp(-(triu(dist_mat)+triu(dist_mat,1)'));
-    W = W-min(W(:));
+    W = W-eye(size(W));
     vec = sort(W(:));
     vec(vec==inf)=[];
     W(W<.4*vec(end))=0;
+    W = W+eye(size(W));
 %     W = W>.4*vec(end);
 else
     X = reshape(X,[],S);

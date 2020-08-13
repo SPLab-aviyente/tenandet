@@ -12,7 +12,7 @@ for i=1:s(1)
         for k=1:s(4)
             [~,est_Y(i,j,:,k),mahal_Y(i,j,:,k)] = robustcov(squeeze(Y(i,j,:,k)));
             if sum(mahal_Y(i,j,:,k)~=0,'all')==0
-                [~,est_Y(i,j,:,k),mahal_Y(i,j,:,k)] = robustcov(squeeze(Y(i,j,:,k))+0.1*randn(s(3),1));
+                [~,est_Y(i,j,:,k),mahal_Y(i,j,:,k)] = robustcov(squeeze(Y(i,j,:,k))+sqrt(0.1)*randn(s(3),1));
             end
         end
     end

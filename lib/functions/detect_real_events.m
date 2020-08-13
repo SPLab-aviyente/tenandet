@@ -26,6 +26,7 @@ for i=1:num_anom
         det_inds = [det_hours', roi];
         if ~isempty(intersect(det_inds, [i_1, i_2, i_3, i_4],'rows'))
             detected(i) = true;
+            break;
         end
     end
 end

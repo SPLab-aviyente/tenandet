@@ -1,6 +1,6 @@
-function [L, S, Nt, obj_val] = gloss(Y, param)
-% [L, S, Nt, obj_val] = gloss(Y, param)
-% Graph Regularized Low rank plus Smooth-Sparse Decomposition
+function [L, S, Nt] = logss(Y, param)
+% [L, S, Nt] = logss(Y, param)
+% Low rank On Graphs plus Smooth-Sparse Decomposition
 
 N = ndims(Y);
 sz = size(Y);
@@ -14,18 +14,25 @@ psi = param.psi;
 beta_1 = param.beta_1;
 beta_2 = param.beta_2;
 beta_3 = param.beta_3;
-beta_4 = param.beta_4;
+% beta_4 = param.beta_4;
 L = cell(1, N);
 for i=1:N
     L{i} = zeros(size(Y));
 end
-La = L;
+% La = L;
 S = zeros(size(Y));
 Nt = zeros(size(Y));
 W = zeros(size(Y));
 Z = zeros(size(Y));
-Phi = get_graphL(Y, 5);
-inv_Phi = ((theta/beta_4)*Phi+eye(size(Phi)))^-1;
+Phi = cell(1, N);
+U = Phi;
+Sig = Phi;
+flags = [0,0,0,1];
+for i = 1:N
+    mods = setdiff(1:N, i);
+    Phi{i} = get_graphL(permute(Y, [mods, i]), 10, flags(i));
+    [U{i}, Sig{i}, ~] = svdtrunc2(pinv(Phi{i}), 0.01);
+end
 D = convmtx([1,-1], size(Y,1));
 D(:,end) = [];
 D(end,1) = -1;
@@ -38,7 +45,7 @@ Lam{1} = cell(1, N);
 for i=1:N
     Lam{1}{i} = zeros(size(Y));
 end
-Lam{4} = Lam{1};
+% Lam{4} = Lam{1};
 Lam{2} = zeros(size(Y));
 Lam{3} = zeros(size(Y));
 
@@ -49,14 +56,13 @@ timeZ = [];
 timeW = [];
 timeDual = [];
 iter = 1;
-obj_val = compute_obj(Y,L,La,S,Nt,W,Z,Lam,D,Phi,param);
 while true
     %% L Update
     tstart = tic;
-    [L, ~] = soft_hosvd_wgr(Y-S-Nt, Lam{1}, La, Lam{4}, psi, beta_1, beta_4);
+    [L, ~] = soft_hosvd_gc(Y-S-Nt, Lam{1}, Sig, U, psi, beta_1);
     timeL(end+1)=toc(tstart);
-    %% La Update
-    La = graph_reg_update(L,Lam{4},inv_Phi);
+%     %% La Update
+%     La = graph_reg_update(L,Lam{4},inv_Phi);
     %% S Update
     tstart = tic;
     temp1 = zeros(size(Y));
@@ -91,16 +97,14 @@ while true
         Lam1_up = Y-L{i}-S-Nt;
         temp = temp + norm(Lam1_up(:))^2;
         Lam{1}{i} = Lam{1}{i}+Lam1_up;
-        Lam{4}{i} = Lam{4}{i}-(L{i}-La{i});
+%         Lam{4}{i} = Lam{4}{i}-(L{i}-La{i});
     end
     temp = sqrt(temp)/(sqrt(N)*norm(Y(:)));
     Lam{2} = Lam{2}-mergeTensors(D, W, 2, 1)+Z;
     Lam{3} = Lam{3}-S+W;
-    timeDual(end+1)=toc(tstart);
+    timeDual(end+1) = toc(tstart);
     
-    %% Error and objective calculations
-    obj_val(iter+1) = compute_obj(Y,L,La,S,Nt,W,Z,Lam,D,Phi,param);
-%     err = abs(obj_val(iter)-obj_val(iter+1))/obj_val(iter);
+    %% Error calculations
     err = max(norm(S(:)-Sold(:))/norm(Sold(:)), temp);
     iter = iter+1;
     
@@ -119,30 +123,4 @@ for i=1:N
 end
 L = temp/N;
 
-end
-
-function [val, term] = compute_obj(Y,L,La,S,Nt,W,Z,Lam,D,Phi,param)
-
-alpha = param.alpha;
-theta = param.theta;
-lambda = param.lambda;
-gamma = param.gamma;
-beta_1 = param.beta_1;
-beta_2 = param.beta_2;
-beta_3 = param.beta_3;
-beta_4 = param.beta_4;
-N = length(L);
-term = zeros(1,9);
-for i=1:N
-    term(6) = term(6) + beta_1/2*sum((Y-S-L{i}-Nt+Lam{1}{i}).^2,'all');
-    term(1) = term(1) + comp_nuclear(L{i}, i);
-    term(9) = term(9) + beta_4/2*sum((L{i}-La{i}-Lam{4}{i}).^2,'all');
-    term(2) = term(2) + theta*comp_gr_reg(La{i}, Phi);
-end
-term(7) = (beta_2/2)*sum((mergeTensors(D, W, 2, 1)-Lam{2}-Z).^2,'all');
-term(8) = (beta_3/2)*sum((S-W-Lam{3}).^2,'all');
-term(3) = lambda*sum(abs(S),'all');
-term(5) = (alpha/2)*norm(Nt(:))^2;
-term(4) = gamma*sum(abs(Z),'all');
-val = sum(term);
 end

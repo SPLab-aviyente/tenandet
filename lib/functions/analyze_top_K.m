@@ -1,10 +1,14 @@
-function [k_list, precision, recall, fpr] = analyze_top_K(S, X, ind_removed)
-% [k_list, precision, recall] = analyze_top_K(S, X, ind_removed)
+function [k_list, precision, recall, fpr] = analyze_top_K(S, X, ind_removed, varargin)
+% [k_list, precision, recall] = analyze_top_K(S, X, ind_removed, varargin)
 % Function that provides analysis of precision and recall of top estimates
 % of anomaly based on amplitude.
 ind_rem = setdiff(1:numel(S), ind_removed);
 S(isnan(S)) = 0;
-[~, ind] = sort(abs(S(ind_rem)),'descend');
+if isempty(varargin)
+    [~, ind] = sort(abs(S(ind_rem)),'descend');
+else
+    [~, ind] = sort(S(ind_rem),'descend');
+end
 ind = ind_rem(ind);
 k_list = [100:500:3000, 4000:1000:9000, 10^4:10^4:10^5];%, 10^5:10^5:7*10^5];
 precision = zeros(length(k_list),1);
