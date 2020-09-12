@@ -30,7 +30,7 @@ Sig = Phi;
 flags = [0,0,0,1];
 for i = 1:N
     mods = setdiff(1:N, i);
-    Phi{i} = get_graphL(permute(Y, [mods, i]), 10, flags(i));
+    Phi{i} = get_graphL(permute(Y, [mods, i]), 5, flags(i));
     [U{i}, Sig{i}, ~] = svdtrunc2(pinv(Phi{i}), 0.01);
 end
 D = convmtx([1,-1], size(Y,1));

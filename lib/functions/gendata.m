@@ -55,16 +55,20 @@ for i=1:number_anomaly
 end
 X = zeros(size(Y));
 Y = Y.*(sqrt(.5)*randn(size(Y))+1);
+% mean_filt_mat = toeplitz([2,1,zeros(1,21),1]/4,[2,1,zeros(1,21),1]/4);
+% s = size(Y);
+% Y = mean_filt_mat*t2m(Y, 1);
+% Y = reshape(Y, s);
 Yn = Y;
 ind_anoms = zeros(number_anomaly*(length_anomaly+1),1);
 for i=1:number_anomaly
     indCell = num2cell([(mat_anomaly(i,1):mat_anomaly(i,2))',repmat(mat_anomaly(i,3:5),mat_anomaly(i,2)-mat_anomaly(i,1)+1,1)],1);
     indVec = sub2ind(dims, indCell{:});
     if pt_vs_fb
-        ind_anoms((i-1)*length_anomaly+1:i*length_anomaly+1) = indVec;
+        ind_anoms((i-1)*length_anomaly+1:i*length_anomaly) = indVec;
     end
     add_sub = sign(randn);
-    Yn(indVec)=(amplitude_anomaly^add_sub)*Yn(indVec)+add_sub*amplitude_anomaly*log(abs(mean(Yn(indVec))))^2;
+    Yn(indVec)=Yn(indVec)*amplitude_anomaly^(add_sub)+add_sub*(amplitude_anomaly)*log(abs(mean(Yn(indVec))))^2;
     X(indVec)=1;
 end
 

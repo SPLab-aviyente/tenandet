@@ -10,7 +10,7 @@ else
     [~, ind] = sort(S(ind_rem),'descend');
 end
 ind = ind_rem(ind);
-k_list = [100:500:3000, 4000:1000:9000, 10^4:10^4:10^5];%, 10^5:10^5:7*10^5];
+k_list = round([0.01:0.01:0.1,0.1:0.1:1].*length(ind));%, 10^5:10^5:7*10^5];
 precision = zeros(length(k_list),1);
 recall = precision;
 fpr = recall;
