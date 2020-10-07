@@ -1,38 +1,47 @@
-function [L, S, Nt] = logss(Y, param)
-% [L, S, Nt] = logss(Y, param)
+function [L, S, times, obj_val, terms] = logss(Y, param)
+% [L, S] = logss(Y, param)
 % Low rank On Graphs plus Smooth-Sparse Decomposition
 
 N = ndims(Y);
 sz = size(Y);
+mask_Y = ones(sz)>0;
+mask_Y(param.ind_m) = ~mask_Y(param.ind_m);
+comp_obj = param.disp;
 max_iter = param.max_iter;
 err_tol = param.err_tol;
-alpha = param.alpha;
-theta = param.theta;
 lambda = param.lambda;
 gamma = param.gamma;
-psi = param.psi;
+theta = param.theta;
 beta_1 = param.beta_1;
 beta_2 = param.beta_2;
 beta_3 = param.beta_3;
-% beta_4 = param.beta_4;
-L = cell(1, N);
-for i=1:N
-    L{i} = zeros(size(Y));
-end
-% La = L;
-S = zeros(size(Y));
-Nt = zeros(size(Y));
-W = zeros(size(Y));
-Z = zeros(size(Y));
-Phi = cell(1, N);
-U = Phi;
-Sig = Phi;
-flags = [0,0,0,1];
+beta_4 = param.beta_4;
+beta_5 = param.beta_5;
+L = zeros(sz);
+S = zeros(sz);
+W = zeros(sz);
+Z = zeros(sz);
+U = cell(1, N);
+inv_GR = cell(1, N);
+Sig = U;
+p.paramn = struct;
 for i = 1:N
-    mods = setdiff(1:N, i);
-    Phi{i} = get_graphL(permute(Y, [mods, i]), 5, flags(i));
-    [U{i}, Sig{i}, ~] = svdtrunc2(pinv(Phi{i}), 0.01);
+    p.paramn.k = min(10, sz(i)-1);
+    Gr = gsp_nn_graph(t2m(Y,i), p.paramn);
+    [V, E] = eig(full(Gr.L));
+    a = diag(E);
+    ind = find(a(1:end-1)./a(2:end)>.9);
+    ind = max(ind(1),round(sz(i)/2));
+    U{i} = V(:,1:ind);
+    Sig{i} = diag(diag(E(1:ind,1:ind)));
+    inv_GR{i} = (2*theta*Sig{i}/beta_4+eye(ind))^-1;
+    sz_lo(i) = ind;
 end
+Gx = cell(1, N);
+for i=1:N
+    Gx{i} = zeros(sz_lo);
+end
+G = zeros(sz_lo);
 D = convmtx([1,-1], size(Y,1));
 D(:,end) = [];
 D(end,1) = -1;
@@ -41,86 +50,111 @@ if beta_3~=0 && beta_2~=0
 else
     invD = zeros(sz(1));
 end
-Lam{1} = cell(1, N);
+Lam{4} = cell(1, N);
 for i=1:N
-    Lam{1}{i} = zeros(size(Y));
+    Lam{4}{i} = zeros(sz_lo);
 end
-% Lam{4} = Lam{1};
-Lam{2} = zeros(size(Y));
-Lam{3} = zeros(size(Y));
+Lam{1} = zeros(sz);
+Lam{2} = zeros(sz);
+Lam{3} = zeros(sz);
+Lam{5} = zeros(sz);
 
-timeL = [];
-timeS = []; 
-timeN = [];
-timeZ = [];
-timeW = [];
-timeDual = [];
+times = [];
 iter = 1;
 while true
     %% L Update
     tstart = tic;
-    [L, ~] = soft_hosvd_gc(Y-S-Nt, Lam{1}, Sig, U, psi, beta_1);
-    timeL(end+1)=toc(tstart);
-%     %% La Update
-%     La = graph_reg_update(L,Lam{4},inv_Phi);
+    T1 = Y-S+Lam{1};
+    T2 = tmprod(G, U, 1:N)+Lam{5};
+    L(mask_Y) = (beta_1*T1(mask_Y)+beta_4*T2(mask_Y))/(beta_1+N*beta_4);
+    L(~mask_Y) = T2(~mask_Y)/N;
+    times(iter,1) = toc(tstart);
+    
+    %% G Update
+    tstart = tic;
+    T3 = zeros(sz_lo);
+    for i=1:N
+        T3 = T3 + Gx{i} + Lam{4}{i};
+    end
+    G = (beta_4*T3 + beta_5*tmprod(L-Lam{5},U,1:N,'T'))/(4*beta_4+beta_5);
+    times(iter,2) = toc(tstart);
+    
+    %% Gaux update
+    tstart = tic;
+    for i=1:N
+        Gx{i} = m2t(inv_GR{i}*t2m((G-Lam{4}{i}),i), sz_lo, i);
+    end
+    times(iter,3) = toc(tstart);
+    
     %% S Update
     tstart = tic;
-    temp1 = zeros(size(Y));
-    for i=1:N
-        temp1 = temp1+beta_1*(Y-L{i}-Nt+Lam{1}{i});
-    end
-    temp2 = beta_3*(W+Lam{3});
+    T1 = beta_1*(Y-L+Lam{1});
+    T2 = beta_3*(W+Lam{3});
     Sold = S;
-    S = soft_threshold((temp1+temp2), lambda)./(N*beta_1+beta_3);
-    timeS(end+1)=toc(tstart);
-    %% N update
-    tstart = tic;
-    Nt = zeros(size(Y));
-    for i=1:N
-        Nt = Nt+(beta_1/(N*beta_1+alpha)).*(Y+Lam{1}{i}-L{i}-S);
-    end
-    timeN(end+1)=toc(tstart);
+    S(mask_Y) = soft_threshold((T1(mask_Y)+T2(mask_Y)), lambda)./(beta_1+beta_3);
+    S(~mask_Y) = soft_threshold(T2(~mask_Y), lambda)./(beta_3);
+    times(iter,4) = toc(tstart);
+    
     %% W Update
     tstart = tic;
     W = invD*(beta_3*Runfold(S-Lam{3})+beta_2*D'*Runfold(Z+Lam{2}));
     W = reshape(W, sz);
-    timeW(end+1)=toc(tstart);
+    times(iter,5) = toc(tstart);
     
     %% Z Update
     tstart = tic;
     Z = soft_threshold(mergeTensors(D, W, 2, 1)-Lam{2}, gamma/(beta_2+eps));
-    timeZ(end+1)=toc(tstart);
+    times(iter,6) = toc(tstart);
+    
     %% Dual Updates
     tstart = tic;
     temp = 0;
-    for i=1:N
-        Lam1_up = Y-L{i}-S-Nt;
-        temp = temp + norm(Lam1_up(:))^2;
-        Lam{1}{i} = Lam{1}{i}+Lam1_up;
-%         Lam{4}{i} = Lam{4}{i}-(L{i}-La{i});
-    end
-    temp = sqrt(temp)/(sqrt(N)*norm(Y(:)));
+    Lam1_up = Y-L-S;
+    Lam{1}(mask_Y) = Lam{1}(mask_Y)+Lam1_up(mask_Y);
     Lam{2} = Lam{2}-mergeTensors(D, W, 2, 1)+Z;
     Lam{3} = Lam{3}-S+W;
-    timeDual(end+1) = toc(tstart);
+    for i=1:N
+        Lam{4}{i} = Lam{4}{i}-(G-Gx{i});
+    end
+    Lam{5} = Lam{5} - (L-tmprod(G,U,1:N));
+    temp = sqrt(temp)/(norm(Y(:)));
+    times(iter,7) = toc(tstart);
     
     %% Error calculations
     err = max(norm(S(:)-Sold(:))/norm(Sold(:)), temp);
     iter = iter+1;
     
+    if comp_obj
+        [obj_val(iter), terms(:,iter)] = obj_fun(Y, L, G, Gx, S, W, Z, Lam, U, Sig, mask_Y, D, param);
+    end
     if err<=err_tol
         disp('Converged!')
         break;
     end
-    if iter>=max_iter
+    if iter>max_iter
         disp('Max iter')
         break;
     end
 end
-temp = zeros(size(Y));
-for i=1:N
-    temp = temp+L{i};
-end
-L = temp/N;
 
+end
+
+function [obj_val, terms] = obj_fun(Y, L, G, Gx, S, W, Z, Lam, U, Sig, mask, D, param)
+
+N = ndims(L);
+
+terms(7) = 0;
+for n=1:N
+    temp = ndim_unfold(Gx{n},n);
+    terms(1) = terms(1)+param.theta*trace(temp*temp'*Sig{n});
+    terms(7) = terms(7)+param.beta_4*norm(T2V(G-Gx{n}-Lam{4}{n}),'fro')^2/2;
+end
+terms(2) = param.lambda*sum(abs(S),'all');
+terms(3) = param.gamma*sum(abs(Z),'all');
+temp = Y-L-S-Lam{1};
+terms(4) = param.beta_1*norm(temp(mask),'fro')^2/2;
+terms(5) = param.beta_2*norm(T2V(tmprod(W,D,1)-Z-Lam{2}),'fro')^2/2;
+terms(6) = param.beta_3*norm(T2V(S-W-Lam{3}), 'fro')^2/2;
+terms(8) = param.beta_5*norm(T2V(Y-tmprod(G, U, 1:N)-Lam{5}),'fro')^2/2;
+obj_val = sum(terms);
 end

@@ -20,16 +20,20 @@ function [X, Y, Yn, removed_inds, mat_anomaly] = gendata(dims, number_anomaly, l
 %   amplitude_anomaly = 3;
 %   modes   = 1:3;
 %   [X,Y]   = gendata(sizes, number_anomaly, length_anomaly, amplitude_anomaly);
-rng(123);
-if nargin >= 2
+if length(varargin) >= 2
     num_missing_days = varargin{2};
 else
     num_missing_days = 5000;
 end
-if nargin == 3
+if length(varargin) >= 3
     pt_vs_fb = varargin{3};
 else
     pt_vs_fb = false;
+end
+if length(varargin) == 4
+    rng(123+varargin{4})
+else
+    rng(123);
 end
 if isempty(varargin{1})
     var=0.1;

@@ -1,4 +1,4 @@
-function [L, S, Nt] = gloss_3(Y, param)
+function [L, S, Nt, times] = gloss_3(Y, param)
 % [L, S, Nt] = gloss_3(Y, param)
 % Graph Regularized Low rank plus Smooth-Sparse Decomposition
 
@@ -50,17 +50,13 @@ Lam{1} = zeros(size(Y));
 Lam{4} = Lam{1};
 Lam{5} = Lam{1};
 
-timeL = [];
-timeS = []; 
-timeN = [];
-timeZ = [];
-timeW = [];
-timeDual = [];
+times = [];
 iter = 1;
 nuc_norm = num2cell([0,0,0,0]);
 obj_val = compute_obj(Y,L,S,Lx,G,Nt,W,Z,Lam,D,Phi,param,nuc_norm);
 while true
     %% L Update
+    tstart = tic;
     temp = zeros(size(Y));
     for i=1:4
         temp = temp + beta_2*(Lx{i}-Lam{2}{i})+beta_3*(G{i}+Lam{3}{i});
@@ -68,13 +64,16 @@ while true
     T1 = Y-S+Lam{1}; 
     L(mask_Y) = (beta_1*T1(mask_Y)+temp(mask_Y))/(beta_1+4*(beta_2+beta_3));
     L(~mask_Y) = temp(~mask_Y)/(4*(beta_2+beta_3));
+    times(iter,1) = toc(tstart);
     
     %% Lx Update
     tstart = tic;
     [Lx, nuc_norm] = soft_hosvd(L, Lam{2}, psi, 1/beta_2);
-    timeL(end+1)=toc(tstart);
+    times(iter,2) = toc(tstart);
     %% G Update
+    tstart = tic;
     G = graph_reg_update2(L, Lam{3}, inv_Phi);
+    times(iter,3) = toc(tstart); 
     %% S Update
     tstart = tic;
     temp1 = beta_1*(Y-L-Nt+Lam{1});
@@ -83,22 +82,22 @@ while true
     Sold = S;
     S = soft_threshold((temp1+temp2), lambda)./(beta_1+beta_5);
     S(~mask_Y) = soft_threshold(temp2(~mask_Y), lambda)./beta_5;
-    timeS(end+1)=toc(tstart);
+    times(iter,4) = toc(tstart);
     %% N update
     tstart = tic;
     Nt = (beta_1/(beta_1+alpha)).*(Y+Lam{1}-L-S);
     Nt(~mask_Y) = 0;
-    timeN(end+1)=toc(tstart);
+    times(iter,5) = toc(tstart);
     %% W Update
     tstart = tic;
     W = invD*(beta_5*Runfold(S-Lam{5})+beta_4*D'*Runfold(Z+Lam{4}));
     W = reshape(W, sz);
-    timeW(end+1)=toc(tstart);
+    times(iter,6) = toc(tstart);
     
     %% Z Update
     tstart = tic;
     Z = soft_threshold(mergeTensors(D, W, 2, 1)-Lam{4}, gamma/(beta_4+eps));
-    timeZ(end+1)=toc(tstart);
+    times(iter,7) = toc(tstart);
     %% Dual Updates
     tstart = tic;
     temp = 0;
@@ -117,7 +116,7 @@ while true
 %     temp2 = sqrt(temp2)/sqrt(N)/norm(Y(:));
     Lam{4} = Lam{4} - mergeTensors(D, W, 2, 1) + Z;
     Lam{5} = Lam{5} - S + W;
-    timeDual(end+1) = toc(tstart);
+    times(iter,8) = toc(tstart);
     
     %% Error and objective calculations
     obj_val(iter+1) = compute_obj(Y,L,S,Lx,G,Nt,W,Z,Lam,D,Phi,param, nuc_norm);
@@ -128,7 +127,7 @@ while true
         disp('Converged!')
         break;
     end
-    if iter>=max_iter
+    if iter>max_iter
         disp('Max iter')
         break;
     end

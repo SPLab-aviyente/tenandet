@@ -1,8 +1,8 @@
-function [L, S, precision, recall, fpr, rmse, mape] = gloss_3_subscript(Y, Y_gen, X, param)
+function [L, S, precision, recall, fpr, time_g, times, rmse, mape] = gloss_3_subscript(Y, Y_gen, X, param)
 
-% tic;
-[L,S,~] = gloss_3(Y, param);
-% time_gloss_3 = toc
+tic;
+[L,S,~,times] = gloss_3(Y, param);
+time_g = toc;
 rmse = norm(L(:)-Y_gen(:))/sqrt(numel(Y_gen));
 mape = sum(abs(L-Y_gen),'all')/numel(Y_gen);
 
