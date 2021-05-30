@@ -23,7 +23,9 @@ if length(varargin)==1
     end
     map = map | map';
     W = zeros(S);
-    W(map) = exp(-D(map)./(2*(norm(D))));
+    const = floor(log10(sum(var(D))));
+    gamma = 1/(S*10^const);
+    W(map) = exp(-D(map)./gamma);
 %     dist_mat = norm(X(:))*ones(S);
 %     data = reshape(X, [], S);
 %     load neighbors.mat

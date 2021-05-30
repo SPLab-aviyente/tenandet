@@ -30,7 +30,7 @@ W = S;
 Z = S;
 for i=1:N
     mods = setdiff(1:N, i);
-    Phi{i} = get_graphL(permute(Y, [mods, i]), 5);
+    Phi{i} = get_graphL(permute(Y, [mods, i]), 3, 0);
     inv_Phi{i} = ((theta/beta_3)*Phi{i}+eye(size(Phi{i})))^-1;
 end
 D = convmtx([1,-1], size(Y,1));

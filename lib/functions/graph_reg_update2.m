@@ -5,9 +5,7 @@ N = length(Lam);
 La = cell(1,N);
 for i=1:N
     La{i} = inv{i}*t2m(L-Lam{i}, i);
-    s = size(L);
-    modc = setdiff(1:N, i);
-    La{i} = ipermute(reshape(La{i}, [s(i), s(modc)]), [i, modc]);
+    La{i} = m2t(La{i}, size(L), i);
 end
 
 end

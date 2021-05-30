@@ -1,13 +1,18 @@
-function [L, S, obj_val] = horpca(Y, param)
-% [L, S, Nt, obj_val] = horpca(Y, param)
+function [L, S, obj_val, times] = horpca(Y, param)
+% [L, S, obj_val, times] = horpca(Y, param)
 % Higher order Robust PCA
 
 N = ndims(Y);
 
 max_iter = param.max_iter;
-err_tol = param.err_tol;
+err_tol = param.opt_tol;
+% err_tol = param.err_tol;
 lambda = param.lambda;
-psi = param.psi;
+if isfield(param, 'psi')
+    psi = param.psi;
+else
+    psi = ones(1,N);
+end
 
 beta_1 = param.beta_1;
 
@@ -22,16 +27,14 @@ for i=1:N
     Lam{i} = zeros(size(Y));
 end
 
-timeL = [];
-timeS = []; 
-timeDual = [];
 iter = 1;
 obj_val = compute_obj(Y,L,S,Lam,param);
 while true
     %% L Update
     tstart = tic;
     [L, ~] = soft_hosvd(Y-S, Lam, psi, 1/beta_1);
-    timeL(end+1)=toc(tstart);
+    times(1,iter) = toc(tstart);
+    
     %% S Update
     tstart = tic;
     temp1 = zeros(size(Y));
@@ -40,7 +43,8 @@ while true
     end
     Sold = S;
     S = soft_threshold(beta_1*(Y-temp1/N), lambda)./(beta_1);
-    timeS(end+1)=toc(tstart);
+    times(2,iter) = toc(tstart);
+    
     %% Dual Updates
     tstart = tic;
     temp = 0;
@@ -50,7 +54,7 @@ while true
         Lam{i} = Lam{i}+Lam1_up;
     end
     temp = sqrt(temp)/(sqrt(N)*norm(Y(:)));
-    timeDual(end+1)=toc(tstart);
+    times(3,iter) = toc(tstart);
     
     %% Error and objective calculations
     obj_val(iter+1) = compute_obj(Y,L,S,Lam,param);
