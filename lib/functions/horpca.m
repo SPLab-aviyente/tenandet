@@ -5,8 +5,8 @@ function [L, S, obj_val, times] = horpca(Y, param)
 N = ndims(Y);
 
 max_iter = param.max_iter;
-err_tol = param.opt_tol;
-% err_tol = param.err_tol;
+% err_tol = param.opt_tol;
+err_tol = param.err_tol;
 lambda = param.lambda;
 if isfield(param, 'psi')
     psi = param.psi;

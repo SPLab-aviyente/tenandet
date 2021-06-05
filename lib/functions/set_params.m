@@ -5,7 +5,7 @@ function param = set_params(Y, varargin)
 %   Y: Data tensor to be learned, some parameters are related to the size
 %   and standard deviations.
 param.alpha = 0;
-param.lambda = 1/sqrt(numel(Y));
+param.lambda = 1/sqrt(max(size(Y)));
 param.gamma = 1/numel(Y);
 param.mu = 10^-3;
 N = ndims(Y);
@@ -25,6 +25,7 @@ param.beta_4 = param.beta_1;
 param.beta_5 = param.beta_1;
 
 param.ind_m = [];
+param.opt_tol = 0.01;
 param.err_tol = 0.01;
 param.max_iter = 100;
 param.disp = 0;

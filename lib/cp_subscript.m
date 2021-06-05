@@ -12,7 +12,7 @@ mape = sum(abs(L-Y_gen),'all')/numel(Y_gen);
 % 
 % S_lof = apply_lof(S, 10);
 % Top-K Analysis
-[~, precision, recall, fpr] = analyze_top_K(mahal_dist(S), X, param.ind_m);
+[~, precision, recall, fpr] = analyze_top_K(S, X, param.ind_m);
 % [~, precision(:,2), recall(:,2), fpr(:,2)] = analyze_top_K(S_svm, X, param.ind_m, true);
 % [~, precision(:,3), recall(:,3), fpr(:,3)] = analyze_top_K(S_lof, X, param.ind_m);
 end
