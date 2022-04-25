@@ -1,4 +1,4 @@
-
+% Script for reading NYC Yellow Taxi Trip data for 2018.
 clear
 days_of_year = {1:31,1:28,1:31,1:30,1:31,1:30,1:31,1:31,1:30,1:31,1:30,1:31};
 d_count=1;

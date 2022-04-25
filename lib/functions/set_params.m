@@ -17,7 +17,7 @@ param.theta = geo_mean_std;
 for i=1:N
     std_m(i) = sum(std(t2m(Y,i)));
 end
-param.psi = min(std_m)*std_m.^-1;
+param.psi = max(std_m)*std_m.^-1;
 param.beta_1 = 1/(5*std(Y(:)));
 param.beta_2 = param.beta_1;
 param.beta_3 = param.beta_1;

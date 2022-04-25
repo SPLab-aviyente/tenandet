@@ -1,5 +1,5 @@
 function [hour, day, week] = date2ind(date)
-
+% Converts the date information to hours, days and weeks for 2018.
 temp = duration(date-datetime(2018,01,01,00,00,00));
 hour_t = mod(hours(temp),24); 
 hour = floor(hour_t)+1;    

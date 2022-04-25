@@ -1,5 +1,7 @@
 function results_real_nyc(S_gloss, S_lrt, S_whorpca, S_horpca, Y, a_L, OCS, ind_removed, param, w_mahal)
-
+%% results_real_nyc(S_gloss, S_lrt, S_whorpca, S_horpca, Y, a_L, OCS, ind_removed, param, w_mahal)
+% Function that plots the detection tables for all methods.
+% !!Obsolete!!
 list_k = [20,100,500,1000,2000,5000,7000,14000,21000,3*10^4:2*10^4:9*10^4];
 det_gloss = zeros(length(list_k),20);
 det_svm = det_gloss;

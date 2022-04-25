@@ -1,59 +1,41 @@
+function [L, S, precision, recall, fpr, time_g, times, rmse, mape] = gloss_subscript(Y, Y_gen, X, param)
+%% [L, S, precision, recall, fpr, time_g, times, rmse, mape] = gloss_subscript(Y, Y_gen, X, param)
+% Script that applies GLOSS, and the following anomaly detection using: EE,
+% LOF, OCSVM.
+%
+%  Parameters:
+%   Y: Noisy data with missing entries.
+%   Y_gen: Clean, fully observed data.
+%   X: Anomaly mask
+%   param: struct with field ind_m, corresponding to the mask for missing
+%   data.
+%
+%  Returns:
+%   L: Low rank tensor
+%   S: Sparse tensor
+%   precision: Precision scores for 20 different percentage levels, for
+%   each anomaly detection algorithm
+%   recall: Recall
+%   fpr: False Positive Ratio
+%   time_g: Total computation time of GLOSS
+%   times: Array that analyzes time complexity of each update of each
+%   variable, e.g. kth iteration, S update.
+%   rmse: Root Mean Square Error between L and original, clean data
+%   mape: Maximum A Posteriori Error between L and original, clean data
 
-% param.lambda = 1/2/sqrt(max(size(Yn)));
-% param.gamma = 1/(max(size(Y)));
-param.theta = 1/(sum(std(t2m(Yn,4),[],2).^2));
-param.alpha = 0;
-% param.lambda = 1/5/sqrt(max(size(Y)));
-% param.gamma = 3/sqrt(max(size(Y)));
-% param.theta = param.lambda/5000;
-% param.lambda = 15/sqrt(max(size(Y)));
-% param.gamma = 15/sqrt(max(size(Y)));
-% param.theta = param.lambda/1000;
-% param.alpha = param.lambda/(std(Y(:))^2);
-% param.psi = [.01,1,10,.001];
-param.beta_1 = 1/(5*std(Yn(setdiff(1:numel(Yn), ind_removed))));
-param.beta_2 = param.beta_1;
-param.beta_3 = param.beta_1;
-param.beta_4 = param.beta_1;
-param.max_iter = 100;
 tic;
-[L,S,~, obj_val] = gloss(Yn, param);
-rmse_gloss(ind_outer) = norm(L(:)-Y_gen(:))/sqrt(numel(Y_gen));
-mape_gloss(ind_outer) = sum(abs(L-Y_gen),'all')/numel(Y_gen);
-time_gloss = toc
-%% Envelope Analysis
-if ind_outer == length(anom_list)
-%     [fpr_gloss_en, recall_gloss_en] = analyze_envelope(S, X, ind_removed);
-end
-%% Top-K Analysis
-[k_list(:,ind_outer), precision_gloss(:,ind_outer), recall_gloss(:,ind_outer), fpr_gloss(:,ind_outer)] = analyze_top_K(mahal_dist(S), X, ind_removed);
-%% Visualize Decomposition
-% plot_sensor_new(X, Yn, S, L, 5)
-% plot_sensor_new(permute(X,[1,3,2,4]), permute(Yn,[1,3,2,4]), permute(S,[1,3,2,4]), permute(L,[1,3,2,4]), 5)
-if ~nodisp
-%     plot_sensor_new(permute(X,[1,3,4,2]), permute(Yn,[1,3,4,2]), permute(S,[1,3,4,2]), permute(L,[1,3,4,2]), 3,30)
-end
-if ind_outer == length(anom_list)
-    %     plot_sensor_new(permute(X,[1,3,2,4]), permute(Yn,[1,3,2,4]), permute(S,[1,3,2,4]), permute(L,[1,3,2,4]), 5)
-end
-% a_S = apply_lof(mahal_dist(S), 10);
-% plot_sensor_new(permute(a_S,[1,3,4,2]), permute(Yn,[1,3,4,2]), permute(mahal_dist(S),[1,3,4,2]), permute(S,[1,3,4,2]), 3,30)
-if ~nodisp
-    a_S = apply_lof(S, 10);
-    plot_sensor_new(permute(X,[1,3,4,2]), permute(Yn,[1,3,4,2]), permute(mahal_S,[1,3,4,2]), permute(S,[1,3,4,2]), 3,30)
-    
-    figure,
-    plot(fpr_gloss_en,recall_gloss_en,'DisplayName','GLOSS')
-    legend, grid
-    title('ROC of the envelope')
-    
-    figure,
-    plot(k_list, precision_gloss,'DisplayName','GLOSS');
-    legend, grid
-    title('Precision')
-    
-    figure,
-    plot(k_list, recall_gloss,'DisplayName','GLOSS');
-    legend, grid
-    title('Recall')
+[L,S,~,times] = gloss(Y, param);
+time_g = toc;
+rmse = norm(L(:)-Y_gen(:))/sqrt(numel(Y_gen));
+mape = sum(abs(L-Y_gen),'all')/numel(Y_gen);
+
+
+out_fr = 0.1;
+S_svm = one_class_svm(S, out_fr);
+% 
+S_lof = apply_lof(S, 10);
+% Top-K Analysis
+[~, precision, recall, fpr] = analyze_top_K(mahal_dist(S), X, param.ind_m);
+[~, precision(:,2), recall(:,2), fpr(:,2)] = analyze_top_K(S_svm, X, param.ind_m, true);
+[~, precision(:,3), recall(:,3), fpr(:,3)] = analyze_top_K(S_lof, X, param.ind_m);
 end

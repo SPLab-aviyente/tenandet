@@ -1,5 +1,5 @@
 function detected = detect_real_events_dc(S, mask, num_k)
-
+%% Event Detection For DC Bike Data
 
 if nargin==2
     num_k = 7000;

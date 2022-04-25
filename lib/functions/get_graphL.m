@@ -8,6 +8,7 @@ if length(varargin)==2
     C = length(unique(varargin{2}));
 end
 
+D = zeros(S,S);
 if length(varargin)==1
     X = reshape(X,[],S);
     for s=1:S
@@ -47,7 +48,6 @@ if length(varargin)==1
 % %     W = W>.4*vec(end);
 else
     X = reshape(X,[],S);
-    D = zeros(S,S);
     W = D;
     
     for s=1:S

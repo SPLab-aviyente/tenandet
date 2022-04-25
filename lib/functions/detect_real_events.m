@@ -1,5 +1,5 @@
 function [detected,num_k] = detect_real_events(S, ind_removed, num_k)
-
+%% Event Detection for NYC Taxi Data
 
 if nargin==2
     num_k = 7000;

@@ -1,4 +1,9 @@
 function [mahal_Y, est_Y] = mahal_dist(Y)
+%% Elliptical Envelope: [mahal_Y, est_Y] = mahal_dist(Y)
+% Computes Mahalanobis distance of each entry of each of the mode-3 fibers.
+% Computes a robust covariance with:
+%  mahal_Y : Mahalanobis distance from mean.
+%  est_Y : Mean of each third mode fiber.
 
 rng(123)
 s = size(Y);
